@@ -1,0 +1,43 @@
+# HADDOCK3 run configuration – peptide-protein docking
+# Usage (for each representative, rep 01..N_CLUSTER):
+#   haddock3 haddock3_run_repXX.toml
+#
+# Replace PEPTIDE_FILE with the appropriate peptide_rep_XX.pdb
+
+run_dir  = "run_rep_01"    # change per representative
+ncores   = 4               # adjust for your system
+
+molecules = [
+    "haddock_inputs/receptor.pdb",
+    "haddock_inputs/peptide_rep_01.pdb"   # <<< change per representative
+]
+
+[topoaa]
+# Topology and coordinates
+
+[rigidbody]
+sampling       = 2000
+ambig_fname    = "haddock_inputs/ambig.tbl"
+w_elec         = 0.2
+w_vdw          = 1.0
+
+[seletop]
+select = 300
+
+[flexref]
+ambig_fname = "haddock_inputs/ambig.tbl"
+cool2_steps = 500
+cool3_steps = 500
+
+[emref]
+# Final energy minimisation
+
+[clustfcc]
+fraction_cutoff = 0.60
+min_population  = 4
+
+[seletopclusts]
+top_models = 4
+
+[caprieval]
+# optional, requires reference structure
