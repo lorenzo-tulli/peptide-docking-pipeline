@@ -1,0 +1,10 @@
+03_haddock/haddock3_runs/
+04_post_haddock/merged_pool/
+04_post_haddock/clustered_poses/
+06_flexpep/flexpep_outputs/
+07_final/final_top5/
+01_conformers/conformers/
+logs/
+__pycache__/
+*.pyc
+*.egg-info/
