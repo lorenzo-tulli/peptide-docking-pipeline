@@ -1,7 +1,6 @@
 # Peptide Docking & Refinement Pipeline
 
 A fully automated SLURM pipeline for peptide–protein docking and refinement on HPC clusters.
-Developed and tested on **BlueCrystal Phase 4** (University of Bristol, Rocky Linux 8).
 
 ---
 
@@ -11,32 +10,19 @@ The pipeline docks a short peptide (VPEYINQ, 7 residues) against a kinase dimer 
 using a geometry-guided conformer selection → HADDOCK3 docking → FlexPepDock refinement
 workflow, producing ranked structures ready for AMBER MD simulation.
 
-**System**
-
-| Component | Residues | Chain |
-|-----------|----------|-------|
-| Peptide (Val-Pro-Glu-Tyr-Ile-Asn-Gln) | 1–7 | P |
-| Kinase monomer 1 | 8–352 | A |
-| Kinase monomer 2 | 353–697 | B (merged into A for docking) |
-| Mg²⁺ + ATP | – | stripped for docking, re-added before MD |
-
-Tyr-4 positioning near the catalytic site is the primary quality criterion for pose selection.
-
----
-
 ## Pipeline steps
 
 ```
-Step 1  generate_rdkit_conformers.py   5000 ETKDG conformers + MMFF94s minimisation
-Step 2  rmsd_cluster.py                geometry pre-filter + backbone RMSD clustering → 15 representatives
+Step 1  generate_rdkit_conformers.py   ETKDG conformers + MMFF94s minimisation
+Step 2  rmsd_cluster.py                geometry pre-filter + backbone RMSD clustering → representative structures
 Step 3  prepare_haddock_inputs.py      receptor/peptide PDBs + AIR restraints (ambig.tbl)
         generate_haddock3_configs.py   one TOML config per representative
-        03_haddock_array.slurm         HADDOCK3 docking (15-task SLURM array)
-Step 4  collect_and_recluster.py       collect HADDOCK outputs, geometry filter, re-cluster → top 20
-Step 5  rank_poses.py                  composite rank: HADDOCK score (60%) + BSA (40%) → top 10
+        03_haddock_array.slurm         HADDOCK3 docking
+Step 4  collect_and_recluster.py       collect HADDOCK outputs, geometry filter, re-cluster → top poses
+Step 5  rank_poses.py                  composite rank: HADDOCK score (60%) + BSA (40%) → top poses
 Step 6  prepare_flexpep.py             prepare FlexPepDock inputs
-        06_flexpep_array.slurm         PyRosetta FlexPepDock refinement (10-task SLURM array)
-Step 7  final_ranking.py               rank by total score + interface ΔG → 10 MD-ready PDBs
+        06_flexpep_array.slurm         PyRosetta FlexPepDock refinement
+Step 7  final_ranking.py               rank by total score + interface ΔG
 ```
 
 ---
@@ -128,15 +114,6 @@ sbatch slurm/06_flexpep_array.slurm
 sbatch slurm/07_final.slurm
 ```
 
-### Monitor jobs
-
-```bash
-squeue -u $USER
-tail -f pipeline/logs/03_haddock_<JOBID>_1.out
-```
-
----
-
 ## Outputs
 
 | Path | Contents |
@@ -163,16 +140,3 @@ Two distance-based filters enforce the expected binding mode:
 | GLU3:CD → LYS213:NZ | ≤ 4 Å | Step 4 (docked poses, direct measurement) |
 
 ---
-
-## Adapting to other systems
-
-- **Partition name**: change `--partition=compute` in all SLURM scripts to match your cluster
-- **Account**: change `--account=chem021482` to your allocation
-- **Peptide/receptor**: update `REFERENCE_COMPLEX`, residue numbering, and geometry filter thresholds in steps 2 and 4
-- **N_CLUSTERS**: change `N_CLUSTERS` in `rmsd_cluster.py` and `--array` in `03_haddock_array.slurm` together
-
----
-
-## License
-
-MIT — see [LICENSE](LICENSE)
