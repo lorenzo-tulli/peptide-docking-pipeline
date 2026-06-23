@@ -25,7 +25,8 @@ Output: flexpep_outputs/pose_01/model_XXXX.pdb
         flexpep_outputs/pose_01/scores.csv
 """
 
-import os, sys, time, argparse
+import os, sys, time, argparse, json
+import numpy as np
 import pandas as pd
 
 ap = argparse.ArgumentParser()
@@ -84,7 +85,7 @@ def add_tyr4_ring_constraints(pose):
     if tyr4_rosnum == 0:
         print("  WARNING: TYR4 (chain B resid 4) not found – no ring constraints")
         return 0
-    rec_end = pose.chain_end(1)   # last residue of chain A (receptor)
+    rec_end = pose.chain_end(1)
     n = 0
     for atom_name in _TYR4_RING_ATOMS:
         res = pose.residue(tyr4_rosnum)
@@ -108,6 +109,35 @@ def add_tyr4_ring_constraints(pose):
             )
             n += 1
     return n
+
+
+def add_glu3_lys213_constraint(pose):
+    """Flat-harmonic constraint between GLU3:CD (peptide) and LYS213:NZ (receptor).
+    Holds the salt-bridge distance observed in the HADDOCK input pose."""
+    glu3_rosnum  = pose.pdb_info().pdb2pose("B", 3)
+    lys213_rosnum = pose.pdb_info().pdb2pose("A", 213)
+    if glu3_rosnum == 0:
+        print("  WARNING: GLU3 (chain B resid 3) not found – skipping constraint")
+        return 0
+    if lys213_rosnum == 0:
+        print("  WARNING: LYS213 (chain A resid 213) not found – skipping constraint")
+        return 0
+    glu3_res  = pose.residue(glu3_rosnum)
+    lys213_res = pose.residue(lys213_rosnum)
+    if not glu3_res.has("CD"):
+        print("  WARNING: GLU3 has no CD atom – skipping constraint")
+        return 0
+    if not lys213_res.has("NZ"):
+        print("  WARNING: LYS213 has no NZ atom – skipping constraint")
+        return 0
+    glu3_id  = AtomID(glu3_res.atom_index("CD"),   glu3_rosnum)
+    lys213_id = AtomID(lys213_res.atom_index("NZ"), lys213_rosnum)
+    d = glu3_res.atom("CD").xyz().distance(lys213_res.atom("NZ").xyz())
+    pose.add_constraint(
+        AtomPairConstraint(glu3_id, lys213_id, FlatHarmonicFunc(d, 0.5, 1.0))
+    )
+    return 1
+
 
 # Optional: interface analyser for I_dG (graceful fallback if unavailable)
 try:
@@ -141,9 +171,11 @@ for i in range(1, N_MODELS + 1):
 
     # Fresh pose each model so MC starts from the same input geometry
     pose = pose_from_pdb(INPUT_PDB)
-    n_cst = add_tyr4_ring_constraints(pose)
+    n_tyr4 = add_tyr4_ring_constraints(pose)
+    n_salt = add_glu3_lys213_constraint(pose)
     if i == 1:
-        print(f"  TYR4 ring constraints added: {n_cst}", flush=True)
+        print(f"  TYR4 ring constraints added:      {n_tyr4}", flush=True)
+        print(f"  GLU3:CD–LYS213:NZ constraint added: {n_salt}", flush=True)
 
     fpd.apply(pose)
 
