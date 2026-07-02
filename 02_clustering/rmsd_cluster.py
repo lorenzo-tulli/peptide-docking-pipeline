@@ -133,7 +133,7 @@ for pdb in pdbs:
     except Exception as e:
         print(f"  WARNING skipping {pdb}: {e}")
 
-print(f"n(valid_pdbs)} conformers loaded.")
+print(f"  → {len(valid_pdbs)} conformers loaded.")
 
 print(f"\nApplying geometry pre-filter (superimpose onto reference peptide)")
 print(f"  TYR4:OH  → ASP171:CG  ≤ {FILTER_TYR4_OH_ASP171_CG} Å")
