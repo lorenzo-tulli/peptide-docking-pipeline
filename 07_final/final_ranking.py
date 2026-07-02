@@ -96,7 +96,7 @@ for rank, row in best_models.head(10).iterrows():
 print(f"\nMD starting structures → {OUT_DIR}/md_start_XX.pdb")
 
 best_models.head(10).assign(
-    md_start_pdb=[f"md_start_{i+1:02d}.pdb" for i in range(min(5, len(best_models)))]
+    md_start_pdb=[f"md_start_{i+1:02d}.pdb" for i in range(min(10, len(best_models)))]
 ).to_csv("final_ranking.csv", index=False)
 print(f"Final ranking table   → final_ranking.csv")
 print(
