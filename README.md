@@ -140,3 +140,21 @@ Two distance-based filters enforce the expected binding mode:
 | GLU3:CD → LYS213:NZ | ≤ 4 Å | Step 4 (docked poses, direct measurement) |
 
 ---
+
+## Known limitations
+
+### HIP histidine gets dropped by HADDOCK/CNS
+
+`HID`/`HIE` (neutral histidine tautomers) dock fine — CNS folds them into its own
+`HIS` topology. `HIP` (doubly-protonated, positively charged histidine) has no CNS
+topology at all, and CNS silently drops any such residue instead of erroring out,
+leaving a one-residue gap in the receptor.
+
+`01_conformers/extract_peptide.py` now renames any `HIP` residue to `HIS` before
+docking, and prints the residue number(s) it renamed. **If your structure has a
+`HIP` residue, you must rename it back from `HIS` to `HIP` at that same residue
+number before running `pdb4amber`/`tleap`**, so the final AMBER MD system keeps the
+intended doubly-protonated, positively charged histidine instead of a generic
+re-protonated one.
+
+---
